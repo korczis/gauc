@@ -20,7 +20,7 @@ fn main() {
             });
 
             // Get data
-            client.get(&format!("foo{}", i), 0, |res| {
+            client.get(&format!("foo{}", i), |res| {
                 if let Ok(response) = res {
                     println!("Got response: {} - {}", response.key.unwrap(), response.value.unwrap())
                 }

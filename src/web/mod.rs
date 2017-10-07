@@ -58,21 +58,10 @@ pub fn get_error(client: instance::InstancePtr, rc: &error_type::ErrorType) -> M
 }
 
 pub fn handler_get(safe_client: &Arc<Mutex<Client>>, req: &mut Request) -> IronResult<Response> {
-    let mut cas: u64 = 0;
-
-    if let Ok(hashmap) = req.get_ref::<UrlEncodedQuery>() {
-        if hashmap.contains_key("cas") {
-            let tmp = hashmap.get("cas").unwrap().last().unwrap();
-            if let Ok(val) = tmp.parse::<u64>() {
-                cas = val;
-            }
-        }
-    };
-
     let docid = req.extensions.get::<Router>().unwrap().find("docid").unwrap_or("");
     let mut client = safe_client.lock().unwrap();
 
-    let response = client.get_sync(docid, cas);
+    let response = client.get_sync(docid);
     match response {
         Ok(result) => {
             let cas = result.cas.to_string();

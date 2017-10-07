@@ -132,13 +132,12 @@ impl Client {
     }
 
     /// Get document from database
-    pub fn get<'a, F>(&'a mut self, key: &str, cas: u64, callback: F) -> &Client
+    pub fn get<'a, F>(&'a mut self, key: &str, callback: F) -> &Client
         where F: Fn(OperationResultGet) + 'static
     {
         let key = key.to_owned();
 
         let mut gcmd = cmd::Get::default();
-        gcmd.cas = cas;
         gcmd.key._type = KvBufferType::Copy;
         gcmd.key.contig.bytes = key.as_ptr() as *const libc::c_void;
         gcmd.key.contig.nbytes = key.len() as u64;
@@ -162,7 +161,7 @@ impl Client {
             let res = lcb_get3(self.instance, user_data, &gcmd as *const cmd::Get);
             if res != ErrorType::Success {
                 error!("lcb_get3() failed");
-                // callback(Err((None, format_error(self.instance, &res))));
+                // callback(Err((None, res)));
             } else if lcb_wait(self.instance) != ErrorType::Success {
                 error!("lcb_wait() failed");
                 // callback(Err((None, format_error(self.instance, &res))))
@@ -174,10 +173,10 @@ impl Client {
         self
     }
 
-    pub fn get_sync(&mut self, key: &str, cas: u64) -> OperationResultGet
+    pub fn get_sync(&mut self, key: &str) -> OperationResultGet
     {
         let (tx, rx): (Sender<OperationResultGet>, Receiver<OperationResultGet>) = mpsc::channel();
-        self.get(key, cas, move |result: OperationResultGet| {
+        self.get(key, move |result: OperationResultGet| {
             let _ = tx.send(result);
         });
 
