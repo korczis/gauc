@@ -439,3 +439,18 @@ unsafe extern "C" fn op_callback(_instance: Instance, cbtype: CallbackType, resp
         _ => error!("! Unknown Callback...")
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test::*;
+
+    const DEFAULT_CONNECTION_STRING: &'static str = "couchbase://localhost/default";
+
+    #[test]
+    fn connect() {
+        if let Ok(client) = Client::connect(DEFAULT_CONNECTION_STRING) {
+            assert_eq!(client.opts.version(), 3);
+        }
+    }
+}
