@@ -6,7 +6,6 @@ sudo: true
 
 rust:
   - stable
-  - beta
   - nightly
 
 env:
@@ -24,7 +23,7 @@ addons:
 
 matrix:
   allow_failures:
-    - rust: nightly
+    - rust: stable
 
 before_script:
   - export PATH=$PATH:/home/travis/.cargo/bin
