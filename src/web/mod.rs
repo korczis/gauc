@@ -1,22 +1,26 @@
 extern crate clap;
 extern crate hyper;
 extern crate iron;
+extern crate params;
 extern crate router;
 extern crate serde;
 extern crate serde_json;
-extern crate urlencoded;
 
 use hyper::header::{ContentType, Headers, ETag, EntityTag};
 use hyper::mime::{Attr, Mime, TopLevel, SubLevel, Value};
 
 use iron::prelude::*;
+use iron::request::Request;
+use iron::response::Response;
 use iron::status;
+// use iron::Handler;
+use iron::IronResult;
+
 use router::Router;
 use serde_json::Map;
 
 use std::io::Read;
 use std::sync::{Arc, Mutex};
-use urlencoded::UrlEncodedQuery;
 
 use super::client::Client;
 use super::couchbase::types::error_type;
@@ -39,13 +43,11 @@ use super::couchbase::types::operation::Operation;
 // POST    /bucket/<BUCKET_NAME>/doc/<ID>/set        - set *
 // POST    /bucket/<BUCKET_NAME>/doc/<ID>/upsert     - upsert (explitcit) *
 
-pub fn get_meta(cas: &str, version: u16) -> Map<String, serde_json::Value> {
-    let mut res: Map<String, serde_json::Value> = Map::new();
-
-    res.insert("cas".to_string(), serde_json::value::Value::String(cas.to_string()));
-    res.insert("version".to_string(), serde_json::value::Value::U64(u64::from(version)));
-
-    res
+pub fn get_meta(cas: &str, version: u16) -> serde_json::Value {
+    json!({
+        "cas": cas.to_string(),
+        "version": u64::from(version)
+    })
 }
 
 pub fn get_error(client: instance::InstancePtr, rc: &error_type::ErrorType) -> Map<String, serde_json::Value> {
@@ -57,7 +59,11 @@ pub fn get_error(client: instance::InstancePtr, rc: &error_type::ErrorType) -> M
     res
 }
 
-pub fn handler_get(safe_client: &Arc<Mutex<Client>>, req: &mut Request) -> IronResult<Response> {
+pub fn handler_get(safe_client: &Arc<Mutex<Client>>, req: &mut iron::request::Request) -> IronResult<Response> {
+    println!("{:?}", &req);
+
+    // let params = req.get_ref::<params::Params>().unwrap();
+
     let docid = req.extensions.get::<Router>().unwrap().find("docid").unwrap_or("");
     let mut client = safe_client.lock().unwrap();
 
@@ -71,17 +77,17 @@ pub fn handler_get(safe_client: &Arc<Mutex<Client>>, req: &mut Request) -> IronR
             headers.set(ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![(Attr::Charset, Value::Utf8)])));
             headers.set(ETag(EntityTag::new(false, cas.to_owned())));
 
-            let mut map = Map::new();
-            map.insert("meta".to_string(), get_meta(&cas, result.version));
+            let doc: serde_json::Value = match serde_json::from_str(&value[..]) {
+                Ok(value) => value,
+                Err(_e) => json!(value)
+            };
 
-            let doc: Map<String, serde_json::Value> = serde_json::from_str(&value).unwrap();
-            map.insert("doc".to_string(), doc);
+            let json = json!({
+                "meta": get_meta(&cas, result.version),
+                "doc": doc
+            });
 
-
-            // TODO: Handle non-json documents
-            let json = serde_json::to_string(&map).unwrap();
-
-            let mut response = Response::with((status::Ok, json));
+            let mut response = Response::with((status::Ok, json.to_string()));
             response.headers = headers;
             Ok(response)
         },
@@ -150,23 +156,24 @@ pub fn handler_store(safe_client: &Arc<Mutex<Client>>, operation: Operation, req
     let mut cas: u64 = 0;
     let mut exptime: u32 = 0;
 
-    if let Ok(hashmap) = req.get_ref::<UrlEncodedQuery>() {
-        if hashmap.contains_key("cas") {
-            let tmp = hashmap.get("cas").unwrap().last().unwrap();
-            cas = match tmp.parse::<u64>() {
-                Ok(val) => val,
-                _ => 0
-            };
-        }
-
-        if hashmap.contains_key("exptime") {
-            let tmp = hashmap.get("exptime").unwrap().last().unwrap();
-            exptime = match tmp.parse::<u32>() {
-                Ok(val) => val,
-                _ => 0
-            };
-        }
-    };
+//    TODO: Port this!
+//    if let Ok(hashmap) = req.get_ref::<Params>() {
+//        if hashmap.contains_key("cas") {
+//            let tmp = hashmap.get("cas").unwrap();
+//            cas = match tmp.parse::<u64>() {
+//                Ok(val) => val,
+//                _ => 0
+//            };
+//        }
+//
+//        if hashmap.contains_key("exptime") {
+//            let tmp = hashmap.get("exptime").unwrap();
+//            exptime = match tmp.parse::<u32>() {
+//                Ok(val) => val,
+//                _ => 0
+//            };
+//        }
+//    };
 
     let docid = req.extensions.get::<Router>().unwrap().find("docid").unwrap_or("");
     let mut client = safe_client.lock().unwrap();
@@ -240,11 +247,10 @@ pub fn handler_view_query(safe_client: &Arc<Mutex<Client>>, req: &mut Request) -
             headers.set(ContentType(Mime(TopLevel::Application, SubLevel::Json, vec![(Attr::Charset, Value::Utf8)])));
             headers.set(ETag(EntityTag::new(false, cas.to_owned())));
 
-            let mut map = Map::new();
-//            map.insert("meta".to_string(), get_meta(&cas, result.version));
-
-            let doc: Map<String, serde_json::Value> = serde_json::from_str(&value).unwrap();
-            map.insert("doc".to_string(), doc);
+            let map = json!({
+                "meta": get_meta(&cas, res.version),
+                "doc": &value
+            });
 
             // TODO: Handle non-json documents
             let json = serde_json::to_string(&map).unwrap();

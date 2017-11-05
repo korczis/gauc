@@ -6,7 +6,7 @@ use gauc::client::*;
 fn main() {
     env_logger::init().unwrap();
 
-    if let Ok(mut client) = Client::connect("couchbase://korczis.com/default") {
+    if let Ok(mut client) = Client::connect("couchbase://localhost/default") {
         let res = client.upsert_sync("hello_world_upsert_sync", "{{\"msg\": \"This is sync upsert!\"}}", 0, 0);
         println!("{:?}", res);
 

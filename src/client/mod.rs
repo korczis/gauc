@@ -54,10 +54,13 @@ impl Client {
     pub fn connect(uri: &str) -> result::Result<Client, String> {
         let connstr = CString::new(uri).unwrap();
 
-        let mut opts = CreateSt::default();
+        let mut opts = CreateSt::new();
         opts.v3.connstr = connstr.as_ptr();
 
-        let mut instance: Instance = Instance::default();
+        // opts.v3.username = CString::new("").unwrap().as_ptr();
+        // opts.v3.passwd = CString::new("").unwrap().as_ptr();
+
+        let mut instance: Instance = Instance::new();
 
         unsafe {
             let res = lcb_create(&mut instance as *mut Instance, &opts as *const CreateSt);
@@ -445,12 +448,25 @@ mod tests {
     use super::*;
     use test::*;
 
-    const DEFAULT_CONNECTION_STRING: &'static str = "couchbase://localhost/default";
+    // const DEFAULT_CONNECTION_STRING: &'static str = "couchbase://localhost/default";
+
+//    lazy_static! {
+//        static mut ref CLIENT: Client = {
+//            Client::connect(DEFAULT_CONNECTION_STRING).unwrap()
+//        };
+//    }
 
     #[test]
     fn connect() {
-        if let Ok(client) = Client::connect(DEFAULT_CONNECTION_STRING) {
+        if let Ok(client) = Client::connect("couchbase://localhost/default") {
             assert_eq!(client.opts.version(), 3);
         }
     }
+
+//    #[test]
+//    fn upsert() {
+//        if let Ok(client) = Client::connect("couchbase://127.0.0.1/default") {
+//            assert_eq!(client.opts.version(), 3);
+//        }
+//    }
 }

@@ -12,11 +12,11 @@ pub struct CreateSt {
 unsafe impl Send for CreateSt {}
 unsafe impl Sync for CreateSt {}
 
-impl Default for CreateSt {
-    fn default() -> Self {
+impl CreateSt {
+    pub fn new() -> CreateSt {
         CreateSt {
             version: 3,
-            v3: CreateSt3::default()
+            v3: CreateSt3::new()
         }
     }
 }

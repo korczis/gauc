@@ -11,9 +11,13 @@ pub struct InstancePtr {
 }
 
 
-impl Default for InstancePtr {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
+impl InstancePtr {
+    pub fn new() -> InstancePtr {
+        unsafe {
+            InstancePtr {
+                ptr: ::std::mem::zeroed()
+            }
+        }
     }
 }
 unsafe impl Send for InstancePtr {}

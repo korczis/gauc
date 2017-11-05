@@ -10,10 +10,10 @@ use std::ffi::CString;
 fn main() {
    let connstr = CString::new("couchbase://localhost/default").unwrap();
 
-    let mut cropts = CreateSt::default();
+    let mut cropts = CreateSt::new();
     cropts.v3.connstr = connstr.as_ptr();
 
-    let mut instance: Instance = Instance::default();
+    let mut instance: Instance = Instance::new();
     unsafe {
         let res = lcb_create(&mut instance as *mut Instance, &cropts as *const CreateSt);
         println!("Create Res: {:?}", res);

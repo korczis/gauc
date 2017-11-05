@@ -16,8 +16,17 @@ pub struct CreateSt3 {
 unsafe impl Send for CreateSt3 {}
 unsafe impl Sync for CreateSt3 {}
 
-impl Default for CreateSt3 {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
+impl CreateSt3 {
+    pub fn new() -> CreateSt3 {
+        unsafe {
+            CreateSt3 {
+                connstr: ::std::mem::zeroed(),
+                username: ::std::mem::zeroed(),
+                passwd: ::std::mem::zeroed(),
+                pad_bucket: ::std::mem::zeroed(),
+                io: ::std::mem::zeroed(),
+                _type: ::std::mem::zeroed()
+            }
+        }
     }
 }

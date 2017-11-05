@@ -5,7 +5,6 @@ extern crate clap;
 extern crate ctrlc;
 extern crate gauc;
 extern crate iron;
-extern crate urlencoded;
 
 use clap::{App, Arg};
 
@@ -18,7 +17,8 @@ use std::process::exit;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-const DESCRIPTION: &'static str = "Couchbase Rust Adapter / CLI / REST Interface";
+const AUTHORS: &'static str = env!("CARGO_PKG_AUTHORS");
+const DESCRIPTION: &'static str = env!("CARGO_PKG_DESCRIPTION");
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 //const DEFAULT_HOST: &'static str = "localhost";
@@ -52,7 +52,7 @@ fn main() {
     // Specify program options
     let matches = App::new(DESCRIPTION)
         .version(VERSION)
-        .author("Tomas Korcak <korczis@gmail.com>")
+        .author(AUTHORS)
         .arg(Arg::with_name("interactive")
             .help("Interactive mode")
             .short("i")

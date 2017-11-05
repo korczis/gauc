@@ -93,7 +93,7 @@ pub enum ErrorType {
 impl fmt::Display for ErrorType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let description = unsafe {
-            CStr::from_ptr(lcb_strerror(Instance::default(), *self)).to_str().unwrap()
+            CStr::from_ptr(lcb_strerror(Instance::new(), *self)).to_str().unwrap()
         };
         write!(f,"{} ({:?})", description, self)
     }
