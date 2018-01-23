@@ -8,7 +8,7 @@ fn main() {
 
     const NUM_ITERATIONS: i32 = 100;
 
-    if let Ok(mut client) = Client::connect("couchbase://localhost/default") {
+    if let Ok(mut client) = Client::connect("couchbase://localhost/default", None) {
         for i in 0..NUM_ITERATIONS {
             println!("Iteration #{}", i);
 

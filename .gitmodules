@@ -1,0 +1,3 @@
+[submodule "external/libcouchbase"]
+	path = external/libcouchbase
+	url = https://github.com/couchbase/libcouchbase

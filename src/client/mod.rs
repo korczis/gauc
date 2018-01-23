@@ -36,29 +36,55 @@ pub type OperationResultViewQueryInternal<'a> = Result<&'a response::ViewQueryIn
 pub type OperationResultViewQueryInternalCallback = Box<Box<Fn(&response::ViewQueryInternal)>>;
 pub type OperationResultViewQueryInternalRowCallback = Box<Box<Fn(&Instance, &u64, *mut c_void)>>;
 
+pub use super::couchbase::auth_type::{AuthFlags, AuthType};
+
+#[derive(Debug, Clone)]
+pub struct Authenticator {
+    pub auth_type: auth_type::AuthType,
+    pub passwords: Vec<(String, String, auth_type::AuthFlags)>
+}
+
+impl Authenticator {
+    pub fn new(auth_type: auth_type::AuthType) -> Authenticator {
+        Authenticator {
+            auth_type: auth_type,
+            passwords: Vec::new()
+        }
+    }
+
+    pub fn add_password(&mut self, username: String, password: String, flags: auth_type::AuthFlags) {
+        self.passwords.push((username, password, flags));
+    }
+}
+
 #[derive(Debug)]
 pub struct Client {
     pub opts: CreateSt,
     pub instance: Instance,
+    pub authenticator: Option<Authenticator>,
     pub uri: String
 }
 
 impl Clone for Client {
     fn clone(&self) -> Client {
         let uri = &self.uri.clone()[..];
-        Client::connect(uri).unwrap()
+        let authenticator = self.authenticator.clone();
+
+        Client::connect(uri, authenticator).unwrap()
     }
 }
 
 impl Client {
-    pub fn connect(uri: &str) -> result::Result<Client, String> {
+    pub fn connect(uri: &str, authenticator: Option<self::Authenticator>) -> result::Result<Client, String> {
         let connstr = CString::new(uri).unwrap();
 
         let mut opts = CreateSt::new();
         opts.v3.connstr = connstr.as_ptr();
 
-        // opts.v3.username = CString::new("").unwrap().as_ptr();
-        // opts.v3.passwd = CString::new("").unwrap().as_ptr();
+//        opts.v3.username = CString::new("Administrator").unwrap().as_ptr();
+//        opts.v3.passwd = CString::new("Administrator").unwrap().as_ptr();
+
+        println!("{:?}", &opts);
 
         let mut instance: Instance = Instance::new();
 
@@ -68,6 +94,29 @@ impl Client {
                 let str = CStr::from_ptr(lcb_strerror(instance, res)).to_str().unwrap().to_string();
                 return Err(format!("lcb_create() - {}", &str));
             }
+
+            let cloned_authenticator = authenticator.clone();
+
+            match authenticator {
+                Some(auth) => {
+                    let mut res = lcbauth_new();
+                    lcbauth_set_mode(res, auth.auth_type);
+
+
+                    for cred in auth.passwords.iter() {
+                        lcbauth_add_pass(
+                            res,
+                            CString::new(&cred.0[..]).unwrap().as_ptr(),
+                            CString::new(&cred.1[..]).unwrap().as_ptr(),
+                            cred.2
+                        );
+                    }
+
+                    lcb_set_auth(instance, res);
+                    lcbauth_unref(res);
+                },
+                None => {}
+            };
 
             info!("Connecting to {}", uri);
 
@@ -105,6 +154,7 @@ impl Client {
             Ok(Client {
                 opts,
                 instance,
+                authenticator: cloned_authenticator,
                 uri: uri.to_string()
             })
         }
@@ -448,25 +498,24 @@ mod tests {
     use super::*;
     use test::*;
 
-    // const DEFAULT_CONNECTION_STRING: &'static str = "couchbase://localhost/default";
-
-//    lazy_static! {
-//        static mut ref CLIENT: Client = {
-//            Client::connect(DEFAULT_CONNECTION_STRING).unwrap()
-//        };
-//    }
-
     #[test]
     fn connect() {
-        if let Ok(client) = Client::connect("couchbase://localhost/default") {
-            assert_eq!(client.opts.version(), 3);
+        let mut authenticator = self::Authenticator::new(AuthType::Rbac);
+
+        authenticator.add_password(
+            String::from("Administrator"),
+            String::from("Administrator"),
+            AuthFlags::Bucket
+        );
+
+        match Client::connect("couchbase://localhost/default", Some(authenticator)) {
+            Ok(mut client) => {
+                assert_eq!(client.opts.version(), 3);
+                client.upsert_sync("test", "{}", 0, 0);
+            },
+            Err(err) => {
+                println!("{:?}", &err);
+            }
         }
     }
-
-//    #[test]
-//    fn upsert() {
-//        if let Ok(client) = Client::connect("couchbase://127.0.0.1/default") {
-//            assert_eq!(client.opts.version(), 3);
-//        }
-//    }
 }

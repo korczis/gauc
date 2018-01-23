@@ -1,3 +1,5 @@
+pub mod authenticator;
+pub mod auth_type;
 pub mod callback_type;
 pub mod cmd;
 pub mod contiguous_buffer;
@@ -11,6 +13,8 @@ pub mod kv_buffer_type;
 pub mod operation;
 pub mod response;
 
+// pub use self::authenticator::Authenticator;
+pub use self::auth_type::AuthType;
 pub use self::callback_type::CallbackType;
 pub use self::contiguous_buffer::ContiguousBuffer;
 pub use self::create_st::CreateSt;

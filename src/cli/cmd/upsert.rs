@@ -8,7 +8,9 @@ pub fn cmd_upsert(client: &mut Client, parts: &[&str]) -> bool {
         _ => {
             // TODO: Add support for cas option
             // TODO: Add support for exptime option
-            client.upsert(parts[1], &format!("{}", parts[2..].join(" "))[..], 0, 0, store_callback);
+            let res = client.upsert(parts[1], &format!("{}", parts[2..].join(" "))[..], 0, 0, store_callback);
+
+            println!("{:?}", &res);
         }
     }
 

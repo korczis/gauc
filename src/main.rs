@@ -93,14 +93,14 @@ fn main() {
     env_logger::init().unwrap();
 
     if matches.is_present("interactive") {
-        if let Ok(mut client) = Client::connect(matches.value_of("url").unwrap()) {
+        if let Ok(mut client) = Client::connect(matches.value_of("url").unwrap(), None) {
             cli::main(&matches, &mut client);
         }
     }
 
     let port: u16 = matches.value_of("rest-port").unwrap().to_string().parse::<u16>().unwrap();
     if matches.is_present("rest") {
-        if let Ok(client) = Client::connect(matches.value_of("url").unwrap()) {
+        if let Ok(client) = Client::connect(matches.value_of("url").unwrap(), None) {
             web::start_web(&Arc::new(Mutex::new(client)), port);
         }
     }

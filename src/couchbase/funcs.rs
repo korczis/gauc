@@ -1,5 +1,7 @@
 use libc::{c_char, c_void};
 
+use super::types::authenticator::Authenticator;
+use super::types::auth_type::{AuthType, AuthFlags};
 use super::types::callback_type::CallbackType;
 use super::types::cmd;
 use super::types::create_st::CreateSt;
@@ -11,6 +13,12 @@ pub type ResponseCallback = unsafe extern "C" fn(instance: Instance, cbtype: Cal
 
 #[link(name = "couchbase")]
 extern {
+    pub fn lcbauth_add_pass(authenticator: Authenticator, user: *const c_char, pass: *const c_char, flags: AuthFlags) -> ErrorType;
+    pub fn lcbauth_new() -> Authenticator;
+    pub fn lcb_set_auth(instance: Instance, authenticator: Authenticator);
+    pub fn lcbauth_set_mode(authenticator: Authenticator, auth_type: AuthType) -> ErrorType;
+    pub fn lcbauth_unref(authenticator: Authenticator);
+
     pub fn lcb_connect(instance: Instance) -> ErrorType;
     pub fn lcb_cntl_string(instance: Instance, key: *const c_char, value: *const c_char) -> ErrorType;
     pub fn lcb_create(instance: *mut Instance, options: *const CreateSt) -> ErrorType;
