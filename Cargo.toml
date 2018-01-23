@@ -1,6 +1,6 @@
 [package]
 name = "gauc"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Tomas Korcak <korczis@gmail.com>"]
 
 description = "Couchbase Rust Adapter / CLI"
