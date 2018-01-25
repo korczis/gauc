@@ -81,10 +81,8 @@ impl Client {
         let mut opts = CreateSt::new();
         opts.v3.connstr = connstr.as_ptr();
 
-//        opts.v3.username = CString::new("Administrator").unwrap().as_ptr();
-//        opts.v3.passwd = CString::new("Administrator").unwrap().as_ptr();
-
-        println!("{:?}", &opts);
+        // opts.v3.username = CString::new("Administrator").unwrap().as_ptr();
+        // opts.v3.passwd = CString::new("Administrator").unwrap().as_ptr();
 
         let mut instance: Instance = Instance::new();
 
