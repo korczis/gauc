@@ -217,12 +217,12 @@ pub fn handler_store(safe_client: &Arc<Mutex<Client>>, operation: Operation, req
     }
 }
 
-pub fn handler_view_query(safe_client: &Arc<Mutex<Client>>, req: &mut Request) -> IronResult<Response> {
+pub fn handler_query_view(safe_client: &Arc<Mutex<Client>>, req: &mut Request) -> IronResult<Response> {
     let ddoc = req.extensions.get::<Router>().unwrap().find("ddoc").unwrap_or("");
     let view = req.extensions.get::<Router>().unwrap().find("view").unwrap_or("");
     let mut client = safe_client.lock().unwrap();
 
-    let response = client.view_query_sync(ddoc, view);
+    let response = client.query_view_sync(ddoc, view);
     match response {
         Err(res) => {
             let mut headers = Headers::new();
@@ -326,8 +326,8 @@ pub fn start_web(c: &Arc<Mutex<Client>>, port: u16) {
 
     // View query handler
     let handler_client = Arc::new(Mutex::new(c.lock().unwrap().clone()));
-    let view_query_handler = move |req: &mut Request| -> IronResult<Response> {
-        handler_view_query(&handler_client, req)
+    let query_view_handler = move |req: &mut Request| -> IronResult<Response> {
+        handler_query_view(&handler_client, req)
     };
 
     // Docs
@@ -342,7 +342,7 @@ pub fn start_web(c: &Arc<Mutex<Client>>, port: u16) {
     router.post("/bucket/:bucketid/doc/:docid/upsert", upsert_handler, "doc_upsert");
 
     // Views
-    router.get("/bucket/:bucketid/view/:ddoc/:view", view_query_handler, "view_query");
+    router.get("/bucket/:bucketid/view/:ddoc/:view", query_view_handler, "query_view");
 
     let address = format!("0.0.0.0:{}", port);
     match Iron::new(router).http(&address[..]) {

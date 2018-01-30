@@ -389,14 +389,17 @@ impl Client {
         self.store_sync(key, value, Operation::Upsert, cas, exptime)
     }
 
-    /// Store document in database
-    pub fn view_query<'a, F>(&'a mut self, ddoc: &str, view: &str, callback: F) -> &Client
+    /// Query view
+    pub fn query_view<'a, F>(&'a mut self, ddoc: &str, view: &str, callback: F) -> &Client
         where F: Fn(OperationResultViewQuery) + 'static
     {
         unsafe {
             extern "C" fn callback_helper(_instance: *mut Instance, _cbtype: CallbackType, raw_row: *const response::ViewQueryInternal) {
                 let row = unsafe { &(*raw_row) };
-                if row.rflags == 1 {
+
+                println!("query_view.callback_helper() - {:?}", &row);
+
+                if row.rflags == 1 || row.rc != ErrorType::Success {
                     unsafe {
                         let cb: Box<Box<Fn(&response::ViewQueryInternal)>> = Box::from_raw(row.cookie as *mut Box<Fn(&response::ViewQueryInternal)>);
                         (*cb)(row);
@@ -405,17 +408,23 @@ impl Client {
             }
 
             let mut gcmd = cmd::ViewQuery::default();
-            gcmd.cmdflags |= 1 << 16;  // LCB_CMDVIEWQUERY_F_INCLUDE_DOCS;
+            gcmd.cmdflags = (1 << 16);  // LCB_CMDVIEWQUERY_F_INCLUDE_DOCS;
             gcmd.ddoc = ddoc.as_bytes().as_ptr() as *const libc::c_void;
             gcmd.nddoc = ddoc.len() as u64;
             gcmd.view = view.as_bytes().as_ptr() as *const libc::c_void;
             gcmd.nview = view.len() as u64;
             gcmd.callback = callback_helper as *mut libc::c_void;
 
+//            let opts = "limit=10&descending=true";
+//            gcmd.optstr = opts.as_bytes().as_ptr() as *const libc::c_void;
+//            gcmd.noptstr = opts.len() as u64;
+
             let boxed: OperationResultViewQueryInternalCallback = Box::new(Box::new(move |result: &response::ViewQueryInternal| {
+                println!("query_view.boxed() - {:?}", &result);
+
                 match result.rc {
                     ErrorType::Success => {
-                        debug!("{:?}", result);
+                        println!("{:?}", result);
                         callback(Ok(response::ViewQuery::new(result)));
                     },
                     e => {
@@ -428,21 +437,24 @@ impl Client {
 
             let res = lcb_view_query(self.instance, user_data, &gcmd as *const cmd::ViewQuery);
             if res != ErrorType::Success {
-                error!("lcb_view_query() failed");
+                println!("lcb_view_query() failed");
                 // callback(Err((None, format_error(self.instance, &res))))
             } else if lcb_wait(self.instance) != ErrorType::Success {
-                error!("lcb_wait() failed")
+                println!("lcb_wait() failed");
                 // callback(Err((None, format_error(self.instance, &res))))
             }
         }
 
+        forget(ddoc);
+        forget(view);
+
         self
     }
 
-    pub fn view_query_sync(&mut self, ddoc: &str, view: &str) -> OperationResultViewQuery
+    pub fn query_view_sync(&mut self, ddoc: &str, view: &str) -> OperationResultViewQuery
     {
         let (tx, rx): (Sender<OperationResultViewQuery>, Receiver<OperationResultViewQuery>) = mpsc::channel();
-        self.view_query(ddoc, view, move |result: OperationResultViewQuery| {
+        self.query_view(ddoc, view, move |result: OperationResultViewQuery| {
             let _ = tx.send(result);
         });
 
@@ -510,6 +522,29 @@ mod tests {
             Ok(mut client) => {
                 assert_eq!(client.opts.version(), 3);
                 client.upsert_sync("test", "{}", 0, 0);
+            },
+            Err(err) => {
+                println!("{:?}", &err);
+            }
+        }
+    }
+
+    #[test]
+    fn query_view_sync() {
+        let mut authenticator = self::Authenticator::new(AuthType::Rbac);
+
+        authenticator.add_password(
+            String::from("Administrator"),
+            String::from("Administrator"),
+            AuthFlags::Bucket
+        );
+
+        match Client::connect("couchbase://hiram.korczis.com/default", Some(authenticator)) {
+            Ok(mut client) => {
+                assert_eq!(client.opts.version(), 3);
+
+                let res = client.query_view_sync("capa", "all");
+                println!("{:?}", &res);
             },
             Err(err) => {
                 println!("{:?}", &err);
