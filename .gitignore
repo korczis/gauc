@@ -13,3 +13,6 @@ Cargo.lock
 # Doc Graphviz
 cargo-count.dot
 rainbow-graph.png
+
+# Cmake
+cmake-build-*/
