@@ -529,26 +529,26 @@ mod tests {
         }
     }
 
-    #[test]
-    fn query_view_sync() {
-        let mut authenticator = self::Authenticator::new(AuthType::Rbac);
-
-        authenticator.add_password(
-            String::from("Administrator"),
-            String::from("Administrator"),
-            AuthFlags::Bucket
-        );
-
-        match Client::connect("couchbase://hiram.korczis.com/default", Some(authenticator)) {
-            Ok(mut client) => {
-                assert_eq!(client.opts.version(), 3);
-
-                let res = client.query_view_sync("capa", "all");
-                println!("{:?}", &res);
-            },
-            Err(err) => {
-                println!("{:?}", &err);
-            }
-        }
-    }
+//    #[test]
+//    fn query_view_sync() {
+//        let mut authenticator = self::Authenticator::new(AuthType::Rbac);
+//
+//        authenticator.add_password(
+//            String::from("Administrator"),
+//            String::from("Administrator"),
+//            AuthFlags::Bucket
+//        );
+//
+//        match Client::connect("couchbase://localhost/default", Some(authenticator)) {
+//            Ok(mut client) => {
+//                assert_eq!(client.opts.version(), 3);
+//
+//                let res = client.query_view_sync("capa", "all");
+//                println!("{:?}", &res);
+//            },
+//            Err(err) => {
+//                println!("{:?}", &err);
+//            }
+//        }
+//    }
 }
